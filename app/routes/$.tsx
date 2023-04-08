@@ -25,7 +25,7 @@ export default function AuthorPage() {
 
   return (
     <div>
-      <h1>{username}'s profile</h1>
+      <h1>@{username}'s profile</h1>
       <div>
         {posts.map((post) => (
           <PostView key={post.id} post={post} />

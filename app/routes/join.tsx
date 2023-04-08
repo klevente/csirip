@@ -5,7 +5,11 @@ import * as React from "react";
 
 import { getUserId, createUserSession } from "~/session.server";
 
-import { createUser, getUserByEmail } from "~/models/user.server";
+import {
+  createUser,
+  getUserByEmail,
+  getUserByUsername,
+} from "~/models/user.server";
 import { safeRedirect, validateEmail } from "~/utils";
 
 export async function loader({ request }: LoaderArgs) {
@@ -17,36 +21,23 @@ export async function loader({ request }: LoaderArgs) {
 export async function action({ request }: ActionArgs) {
   const formData = await request.formData();
   const email = formData.get("email");
+  const username = formData.get("username");
   const password = formData.get("password");
   const redirectTo = safeRedirect(formData.get("redirectTo"), "/");
 
   if (!validateEmail(email)) {
     return json(
-      { errors: { email: "Email is invalid", password: null } },
+      { errors: { email: "Email is invalid", username: null, password: null } },
       { status: 400 }
     );
   }
 
-  if (typeof password !== "string" || password.length === 0) {
-    return json(
-      { errors: { email: null, password: "Password is required" } },
-      { status: 400 }
-    );
-  }
-
-  if (password.length < 8) {
-    return json(
-      { errors: { email: null, password: "Password is too short" } },
-      { status: 400 }
-    );
-  }
-
-  const existingUser = await getUserByEmail(email);
-  if (existingUser) {
+  if (typeof username !== "string" || username.length === 0) {
     return json(
       {
         errors: {
-          email: "A user already exists with this email",
+          email: null,
+          username: "Username is invalid",
           password: null,
         },
       },
@@ -54,7 +45,63 @@ export async function action({ request }: ActionArgs) {
     );
   }
 
-  const user = await createUser(email, password);
+  if (typeof password !== "string" || password.length === 0) {
+    return json(
+      {
+        errors: {
+          email: null,
+          username: null,
+          password: "Password is required",
+        },
+      },
+      { status: 400 }
+    );
+  }
+
+  if (password.length < 8) {
+    return json(
+      {
+        errors: {
+          email: null,
+          username: null,
+          password: "Password is too short",
+        },
+      },
+      { status: 400 }
+    );
+  }
+
+  const existingUserByEmail = await getUserByEmail(email);
+
+  if (existingUserByEmail) {
+    return json(
+      {
+        errors: {
+          email: "A user already exists with this email",
+          username: null,
+          password: null,
+        },
+      },
+      { status: 400 }
+    );
+  }
+
+  const existingUserByUsername = await getUserByUsername(username);
+
+  if (existingUserByUsername) {
+    return json(
+      {
+        errors: {
+          email: null,
+          username: "A user already exists with this username",
+          password: null,
+        },
+      },
+      { status: 400 }
+    );
+  }
+
+  const user = await createUser(email, username, password);
 
   return createUserSession({
     request,
@@ -71,6 +118,7 @@ export default function Join() {
   const redirectTo = searchParams.get("redirectTo") ?? undefined;
   const actionData = useActionData<typeof action>();
   const emailRef = React.useRef<HTMLInputElement>(null);
+  const usernameRef = React.useRef<HTMLInputElement>(null);
   const passwordRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
@@ -78,6 +126,8 @@ export default function Join() {
       emailRef.current?.focus();
     } else if (actionData?.errors?.password) {
       passwordRef.current?.focus();
+    } else if (actionData?.errors?.username) {
+      usernameRef.current?.focus();
     }
   }, [actionData]);
 
@@ -108,6 +158,33 @@ export default function Join() {
               {actionData?.errors?.email && (
                 <div className="pt-1 text-red-700" id="email-error">
                   {actionData.errors.email}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Username
+            </label>
+            <div className="mt-1">
+              <input
+                ref={usernameRef}
+                id="username"
+                required
+                autoFocus={true}
+                name="username"
+                type="text"
+                aria-invalid={actionData?.errors?.username ? true : undefined}
+                aria-describedby="username-error"
+                className="w-full rounded border border-gray-500 px-2 py-1 text-lg"
+              />
+              {actionData?.errors?.username && (
+                <div className="pt-1 text-red-700" id="email-error">
+                  {actionData.errors.username}
                 </div>
               )}
             </div>

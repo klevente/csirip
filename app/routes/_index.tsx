@@ -1,18 +1,29 @@
 import type { ActionArgs, V2_MetaFunction } from "@remix-run/node";
-import { Form, Link, useLoaderData, useNavigation } from "@remix-run/react";
+import {
+  Await,
+  Form,
+  Link,
+  useLoaderData,
+  useNavigation,
+} from "@remix-run/react";
 
 import { useOptionalUser } from "~/utils";
 import { createPost, getLatestPosts } from "~/models/post.server";
-import { json, redirect } from "@remix-run/node";
-import React, { useEffect, useRef } from "react";
+import { defer, json, redirect } from "@remix-run/node";
+import React, { Suspense, useEffect, useRef } from "react";
 import { requireUserId } from "~/session.server";
 import { PostView } from "~/components/post-view";
 
 export const meta: V2_MetaFunction = () => [{ title: "Csirip!" }];
 
 export async function loader() {
-  const posts = await getLatestPosts();
-  return json({ posts });
+  const posts = getLatestPosts().then((posts) =>
+    posts.map((post) => ({
+      ...post,
+      createdAt: post.createdAt.toISOString(),
+    }))
+  );
+  return defer({ posts });
 }
 
 export async function action({ request }: ActionArgs) {
@@ -32,7 +43,7 @@ export async function action({ request }: ActionArgs) {
 
 export default function Index() {
   const user = useOptionalUser();
-  const { posts } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const isAdding = navigation.state === "submitting";
 
@@ -45,29 +56,36 @@ export default function Index() {
   }, [isAdding]);
 
   return (
-    <main className="relative min-h-screen">
-      <h1>Csirip!</h1>
-      {user ? (
-        <>
-          <Form method="post" ref={formRef}>
-            <input type="text" placeholder="Csirip?" name="content" />
-            <button type="submit">Csiripelek!</button>
-          </Form>
-          <Form action="/logout" method="post">
-            <button
-              type="submit"
-              className="rounded bg-slate-600 px-4 py-2 text-blue-100 hover:bg-blue-500 active:bg-blue-600"
-            >
-              Logout
-            </button>
-          </Form>
-        </>
-      ) : (
-        <Link to="/login">Log in!</Link>
+    <main>
+      {user && (
+        <Form
+          method="post"
+          ref={formRef}
+          className="flex justify-between gap-2"
+        >
+          <input
+            type="text"
+            placeholder="Csirip csirip..."
+            name="content"
+            className="box-shadow-black w-full rounded border-2 border-black px-1 py-2 focus:outline-none"
+          />
+          <button
+            type="submit"
+            className="box-shadow-black active:box-shadow-black-active rounded border-2 border-solid border-black bg-teal-500 p-2 text-white hover:bg-teal-400 active:bg-teal-600"
+          >
+            Csirip!
+          </button>
+        </Form>
       )}
-      {posts.map((post) => {
-        return <PostView key={post.id} post={post} />;
-      })}
+      <Suspense fallback={<p>Loading...</p>}>
+        <Await resolve={data.posts}>
+          {(posts) => {
+            return posts.map((post) => {
+              return <PostView key={post.id} post={post} />;
+            });
+          }}
+        </Await>
+      </Suspense>
     </main>
   );
 }

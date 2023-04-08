@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+    .box-shadow-black {
+        box-shadow: 0.125rem 0.125rem 0 0 #000;
+    }
+
+    .box-shadow-black-active {
+        box-shadow: inset 0.125rem 0.125rem 0 0 #000;
+    }
+}
