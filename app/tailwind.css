@@ -10,4 +10,16 @@
     .box-shadow-black-active {
         box-shadow: inset 0.125rem 0.125rem 0 0 #000;
     }
+
+    .box-shadow-accent {
+        box-shadow: 0.125rem 0.125rem 0 0 #14b8a6;
+    }
+
+    .box-shadow-error {
+        box-shadow: 0.125rem 0.125rem 0 0 #a21caf;
+    }
+
+    .box-shadow-selected {
+        box-shadow: 0.125rem 0.125rem 0 0 #d946ef;
+    }
 }

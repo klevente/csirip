@@ -1,11 +1,5 @@
 import type { ActionArgs, V2_MetaFunction } from "@remix-run/node";
-import {
-  Await,
-  Form,
-  Link,
-  useLoaderData,
-  useNavigation,
-} from "@remix-run/react";
+import { Await, Form, useLoaderData, useNavigation } from "@remix-run/react";
 
 import { useOptionalUser } from "~/utils";
 import { createPost, getLatestPosts } from "~/models/post.server";
@@ -13,6 +7,8 @@ import { defer, json, redirect } from "@remix-run/node";
 import React, { Suspense, useEffect, useRef } from "react";
 import { requireUserId } from "~/session.server";
 import { PostView } from "~/components/post-view";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
 
 export const meta: V2_MetaFunction = () => [{ title: "Csirip!" }];
 
@@ -63,18 +59,10 @@ export default function Index() {
           ref={formRef}
           className="flex justify-between gap-2"
         >
-          <input
-            type="text"
-            placeholder="Csirip csirip..."
-            name="content"
-            className="box-shadow-black w-full rounded border-2 border-black px-1 py-2 focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="box-shadow-black active:box-shadow-black-active rounded border-2 border-solid border-black bg-teal-500 p-2 text-white hover:bg-teal-400 active:bg-teal-600"
-          >
+          <Input type="text" placeholder="Csirip csirip..." name="content" />
+          <Button intent="primary" type="submit">
             Csirip!
-          </button>
+          </Button>
         </Form>
       )}
       <Suspense fallback={<p>Loading...</p>}>

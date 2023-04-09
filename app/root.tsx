@@ -15,6 +15,7 @@ import {
 import tailwindStylesheetUrl from "./styles/tailwind.css";
 import { getUser } from "./session.server";
 import React from "react";
+import { Button } from "~/components/ui/button";
 
 export const links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: tailwindStylesheetUrl }];
@@ -50,18 +51,15 @@ export default function App() {
                   @{user.username}
                 </Link>
                 <Form action="/logout" method="post">
-                  <button
-                    type="submit"
-                    className="box-shadow-black active:box-shadow-black-active w-full rounded border-2 border-black px-1 py-2 hover:bg-gray-100 active:bg-gray-200"
-                  >
+                  <Button intent="secondary" type="submit">
                     Logout
-                  </button>
+                  </Button>
                 </Form>
               </div>
             ) : (
-              <button className="box-shadow-black active:box-shadow-black-active rounded border-2 border-solid border-black bg-teal-500 p-2 text-white hover:bg-teal-400 active:bg-teal-600">
-                <Link to="/login">Login</Link>
-              </button>
+              <Link to="/login">
+                <Button>Login</Button>
+              </Link>
             )}
           </nav>
         </header>
