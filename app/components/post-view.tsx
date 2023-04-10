@@ -23,7 +23,7 @@ export const PostView: React.FC<PostViewProps> = ({ post }) => {
           @{post.user.username}
         </Link>{" "}
         -{" "}
-        <Link className="hover:underline" to={`post/${post.id}`}>
+        <Link className="hover:underline" to={`/post/${post.id}`}>
           {fromNow}
         </Link>
       </h2>
