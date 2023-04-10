@@ -62,7 +62,7 @@ export async function action({ request }: ActionArgs) {
   });
 }
 
-export const meta: V2_MetaFunction = () => [{ title: "Login" }];
+export const meta: V2_MetaFunction = () => [{ title: "Login :: Csirip" }];
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams();

@@ -10,8 +10,6 @@ import { PostView } from "~/components/post-view";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 
-export const meta: V2_MetaFunction = () => [{ title: "Csirip!" }];
-
 export async function loader() {
   const posts = getLatestPosts().then((posts) =>
     posts.map((post) => ({
@@ -36,6 +34,8 @@ export async function action({ request }: ActionArgs) {
 
   return redirect("/");
 }
+
+export const meta: V2_MetaFunction = () => [{ title: "Home :: Csirip" }];
 
 export default function Index() {
   const user = useOptionalUser();

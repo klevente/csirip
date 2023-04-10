@@ -79,7 +79,7 @@ export async function action({ request }: ActionArgs) {
   });
 }
 
-export const meta: V2_MetaFunction = () => [{ title: "Sign Up" }];
+export const meta: V2_MetaFunction = () => [{ title: "Join :: Csirip" }];
 
 export default function Join() {
   const [searchParams] = useSearchParams();

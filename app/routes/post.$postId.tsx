@@ -1,6 +1,6 @@
 import { getPost } from "~/models/post.server";
 import invariant from "tiny-invariant";
-import type { LoaderArgs } from "@remix-run/node";
+import type { LoaderArgs, V2_MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { PostView } from "~/components/post-view";
@@ -15,6 +15,12 @@ export async function loader({ params }: LoaderArgs) {
   }
   return json({ post });
 }
+
+export const meta: V2_MetaFunction<typeof loader> = ({ data }) => [
+  {
+    title: `@${data.post.user.username} says: "${data.post.content}" :: Csirip`,
+  },
+];
 
 export default function PostDetailsPage() {
   const { post } = useLoaderData<typeof loader>();

@@ -1,6 +1,6 @@
 import { getPostsByUser } from "~/models/post.server";
 import invariant from "tiny-invariant";
-import type { LoaderArgs } from "@remix-run/node";
+import type { LoaderArgs, V2_MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { PostView } from "~/components/post-view";
@@ -19,6 +19,10 @@ export async function loader({ params }: LoaderArgs) {
 
   return json({ posts: postsWithUser, username });
 }
+
+export const meta: V2_MetaFunction<typeof loader> = ({ data }) => [
+  { title: `@${data.username} :: Csirip` },
+];
 
 export default function AuthorPage() {
   const { posts, username } = useLoaderData<typeof loader>();
