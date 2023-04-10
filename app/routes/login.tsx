@@ -1,20 +1,28 @@
 import type { ActionArgs, LoaderArgs, V2_MetaFunction } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import {
-  Form,
-  Link,
-  useActionData,
-  useNavigation,
-  useSearchParams,
-} from "@remix-run/react";
-import * as React from "react";
+import { Link, useActionData, useSearchParams } from "@remix-run/react";
 
 import { createUserSession, getUserId } from "~/session.server";
 import { verifyLogin } from "~/models/user.server";
-import { safeRedirect, validateEmail } from "~/utils";
+import { safeRedirect } from "~/utils";
 import { FormInput } from "~/components/ui/form-input";
 import { SubmitButton } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
+import { ValidatedForm, validationError } from "remix-validated-form";
+import { withZod } from "@remix-validated-form/with-zod";
+import { z } from "zod";
+import { useHydrated } from "remix-utils";
+import { zfd } from "zod-form-data";
+import { useEffect, useRef } from "react";
+
+const validator = withZod(
+  z.object({
+    redirectTo: zfd.text().optional(),
+    email: zfd.text(z.string().email()),
+    password: zfd.text(),
+    remember: zfd.checkbox(),
+  })
+);
 
 export async function loader({ request }: LoaderArgs) {
   const userId = await getUserId(request);
@@ -23,47 +31,34 @@ export async function loader({ request }: LoaderArgs) {
 }
 
 export async function action({ request }: ActionArgs) {
+  console.log("a");
   const formData = await request.formData();
-  const email = formData.get("email");
-  const password = formData.get("password");
-  const redirectTo = safeRedirect(formData.get("redirectTo"), "/notes");
-  const remember = formData.get("remember");
 
-  if (!validateEmail(email)) {
-    return json(
-      { errors: { email: "Email is invalid", password: null } },
-      { status: 400 }
-    );
+  const result = await validator.validate(formData);
+  if (result.error) {
+    return validationError(result.error);
   }
 
-  if (typeof password !== "string" || password.length === 0) {
-    return json(
-      { errors: { email: null, password: "Password is required" } },
-      { status: 400 }
-    );
-  }
+  const { email, password, redirectTo, remember } = result.data;
 
-  if (password.length < 8) {
-    return json(
-      { errors: { email: null, password: "Password is too short" } },
-      { status: 400 }
-    );
-  }
+  const redirectToUrl = safeRedirect(redirectTo, "/");
 
   const user = await verifyLogin(email, password);
 
   if (!user) {
-    return json(
-      { errors: { email: "Invalid email or password", password: null } },
-      { status: 400 }
-    );
+    return validationError({
+      fieldErrors: {
+        password: "Invalid email or password",
+      },
+      formId: result.formId,
+    });
   }
 
   return createUserSession({
     request,
     userId: user.id,
-    remember: remember === "on",
-    redirectTo,
+    remember,
+    redirectTo: redirectToUrl,
   });
 }
 
@@ -73,24 +68,28 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/";
   const actionData = useActionData<typeof action>();
-  const navigation = useNavigation();
-  const emailRef = React.useRef<HTMLInputElement>(null);
-  const passwordRef = React.useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
-  const submitting = navigation.state === "submitting";
-
-  React.useEffect(() => {
-    if (actionData?.errors?.email) {
+  useEffect(() => {
+    if (actionData?.fieldErrors.email) {
       emailRef.current?.focus();
-    } else if (actionData?.errors?.password) {
+    } else if (actionData?.fieldErrors?.password) {
       passwordRef.current?.focus();
     }
   }, [actionData]);
 
+  const isHydrated = useHydrated();
+
   return (
     <div className="flex min-h-full flex-col justify-center">
       <div className="mx-auto w-full max-w-md px-8">
-        <Form method="post" className="flex flex-col space-y-6">
+        <ValidatedForm
+          validator={validator}
+          noValidate={isHydrated}
+          method="post"
+          className="flex flex-col space-y-6"
+        >
           <input type="hidden" name="redirectTo" value={redirectTo} />
 
           <FormInput
@@ -101,7 +100,6 @@ export default function LoginPage() {
             autoFocus
             type="email"
             autoComplete="email"
-            error={actionData?.errors?.email}
           />
 
           <FormInput
@@ -111,12 +109,9 @@ export default function LoginPage() {
             ref={passwordRef}
             type="password"
             autoComplete="current-password"
-            error={actionData?.errors?.password}
           />
 
-          <SubmitButton submitting={submitting} fullWidth>
-            Log in
-          </SubmitButton>
+          <SubmitButton fullWidth>Log in</SubmitButton>
 
           <div className="flex justify-between">
             <Checkbox label="Remember me" name="remember" />
@@ -133,7 +128,7 @@ export default function LoginPage() {
               </Link>
             </div>
           </div>
-        </Form>
+        </ValidatedForm>
       </div>
     </div>
   );

@@ -45,22 +45,29 @@ export default function App() {
                 🐦
               </Link>
             </h1>
-            {user ? (
-              <div className="flex items-center gap-2">
-                <Link className="hover:underline" to={`/${user.username}`}>
-                  @{user.username}
-                </Link>
-                <Form action="/logout" method="post">
-                  <Button intent="secondary" type="submit">
-                    Logout
-                  </Button>
-                </Form>
-              </div>
-            ) : (
-              <Link to="/login">
-                <Button>Login</Button>
-              </Link>
-            )}
+            <div className="flex items-center gap-2">
+              {user ? (
+                <>
+                  <Link className="hover:underline" to={`/${user.username}`}>
+                    @{user.username}
+                  </Link>
+                  <Form action="/logout" method="post">
+                    <Button intent="secondary" type="submit">
+                      Logout
+                    </Button>
+                  </Form>
+                </>
+              ) : (
+                <>
+                  <Link to="/join">
+                    <Button intent="secondary">Sign up</Button>
+                  </Link>
+                  <Link to="/login">
+                    <Button>Login</Button>
+                  </Link>
+                </>
+              )}
+            </div>
           </nav>
         </header>
         <Outlet />
