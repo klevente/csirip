@@ -6,46 +6,40 @@ describe("smoke tests", () => {
   });
 
   it("should allow you to register and login", () => {
+    const username = faker.internet.userName();
     const loginForm = {
-      email: `${faker.internet.userName()}@example.com`,
+      email: `${username}@example.com`,
+      username,
       password: faker.internet.password(),
     };
 
-    cy.then(() => ({ email: loginForm.email })).as("user");
+    cy.then(() => ({ email: loginForm.email, username })).as("user");
 
     cy.visitAndCheck("/");
 
     cy.findByRole("link", { name: /sign up/i }).click();
 
     cy.findByRole("textbox", { name: /email/i }).type(loginForm.email);
+    cy.findByRole("textbox", { name: /username/i }).type(loginForm.username);
     cy.findByLabelText(/password/i).type(loginForm.password);
     cy.findByRole("button", { name: /create account/i }).click();
 
-    cy.findByRole("link", { name: /notes/i }).click();
+    cy.findByRole("button", { name: /logout/i }).should("be.visible");
+
+    cy.findByRole("link", { name: /🐦/i }).click();
     cy.findByRole("button", { name: /logout/i }).click();
-    cy.findByRole("link", { name: /log in/i });
+    cy.findByRole("link", { name: /login/i });
   });
 
-  it("should allow you to make a note", () => {
-    const testNote = {
-      title: faker.lorem.words(1),
-      body: faker.lorem.sentences(1),
-    };
+  it("should allow you to make a post", () => {
+    const testPost = faker.lorem.sentences(1);
     cy.login();
 
     cy.visitAndCheck("/");
 
-    cy.findByRole("link", { name: /notes/i }).click();
-    cy.findByText("No notes yet");
+    cy.findByRole("textbox").type(testPost);
+    cy.findByRole("button", { name: /csirip!/i }).click();
 
-    cy.findByRole("link", { name: /\+ new note/i }).click();
-
-    cy.findByRole("textbox", { name: /title/i }).type(testNote.title);
-    cy.findByRole("textbox", { name: /body/i }).type(testNote.body);
-    cy.findByRole("button", { name: /save/i }).click();
-
-    cy.findByRole("button", { name: /delete/i }).click();
-
-    cy.findByText("No notes yet");
+    cy.findByText(testPost);
   });
 });
