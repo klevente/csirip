@@ -2,9 +2,18 @@ import { Authenticator } from "remix-auth";
 import { getSession, sessionStorage } from "~/services/session.server";
 import type { User } from "@prisma/client";
 import { FormStrategy } from "remix-auth-form";
-import { verifyLogin } from "~/models/user.server";
+import {
+  findOrCreateUserFromOAuthProvider,
+  verifyLogin,
+} from "~/models/user.server";
 import invariant from "tiny-invariant";
 import { NoUserError, UnreachableCaseError } from "~/error";
+import { GoogleStrategy } from "remix-auth-google";
+import {
+  DiscordStrategy,
+  GitHubStrategy,
+  SocialsProvider,
+} from "remix-auth-socials";
 
 type FormContext =
   | {
@@ -39,6 +48,51 @@ authenticator.use(
     }
   }),
   "form"
+);
+
+authenticator.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      scope: ["openid", "email", "profile"],
+      callbackURL: `${process.env.APP_URL}/auth/${SocialsProvider.GOOGLE}/callback`,
+    },
+    async ({ profile }) => {
+      return findOrCreateUserFromOAuthProvider(profile.emails[0].value);
+    }
+  )
+);
+
+authenticator.use(
+  new GitHubStrategy(
+    {
+      clientID: process.env.GITHUB_CLIENT_ID as string,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+      callbackURL: `${process.env.APP_URL}/auth/${SocialsProvider.GITHUB}/callback`,
+    },
+    async ({ profile }) => {
+      return findOrCreateUserFromOAuthProvider(profile.emails[0].value);
+    }
+  )
+);
+
+authenticator.use(
+  new DiscordStrategy(
+    {
+      clientID: process.env.DISCORD_CLIENT_ID as string,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET as string,
+      callbackURL: `${process.env.APP_URL}/auth/${SocialsProvider.DISCORD}/callback`,
+    },
+    async ({ profile }) => {
+      console.log(JSON.stringify(profile));
+      const email = profile.__json.email;
+      if (!email) {
+        throw new Error("No email");
+      }
+      return findOrCreateUserFromOAuthProvider(email);
+    }
+  )
 );
 
 export async function getUser(request: Request) {

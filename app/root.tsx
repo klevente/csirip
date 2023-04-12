@@ -29,7 +29,6 @@ export async function loader({ request }: LoaderArgs) {
 
 export default function App() {
   const { user } = useLoaderData<typeof loader>();
-  console.log(user);
   return (
     <html lang="en" className="h-full">
       <head>

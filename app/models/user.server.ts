@@ -37,6 +37,19 @@ export async function createUser(
   });
 }
 
+export async function findOrCreateUserFromOAuthProvider(email: User["email"]) {
+  const existingUser = await getUserByEmail(email);
+  if (existingUser) {
+    return existingUser;
+  }
+  return prisma.user.create({
+    data: {
+      email,
+      username: email,
+    },
+  });
+}
+
 export async function deleteUserByEmail(email: User["email"]) {
   return prisma.user.delete({ where: { email } });
 }

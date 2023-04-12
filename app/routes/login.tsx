@@ -1,18 +1,19 @@
 import type { ActionArgs, LoaderArgs, V2_MetaFunction } from "@remix-run/node";
-import { Link, useActionData, useSearchParams } from "@remix-run/react";
+import { Form, Link, useActionData, useSearchParams } from "@remix-run/react";
 
 import { safeRedirect } from "~/utils";
 import { FormInput } from "~/components/ui/form-input";
-import { SubmitButton } from "~/components/ui/button";
+import { Button, SubmitButton } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { ValidatedForm, validationError } from "remix-validated-form";
 import { withZod } from "@remix-validated-form/with-zod";
 import { z } from "zod";
 import { useHydrated } from "remix-utils";
 import { zfd } from "zod-form-data";
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { authenticator } from "~/services/auth.server";
 import { NoUserError } from "~/error";
+import { SocialsProvider } from "remix-auth-socials";
 
 export const loginValidator = withZod(
   z.object({
@@ -68,6 +69,17 @@ export async function action({ request }: ActionArgs) {
 }
 
 export const meta: V2_MetaFunction = () => [{ title: "Login :: Csirip" }];
+
+interface SocialButtonProps {
+  provider: SocialsProvider;
+  label: string;
+}
+
+const SocialButton: React.FC<SocialButtonProps> = ({ provider, label }) => (
+  <Form action={`/auth/${provider}`} method="post">
+    <Button>{label}</Button>
+  </Form>
+);
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams();
@@ -134,6 +146,20 @@ export default function LoginPage() {
             </div>
           </div>
         </ValidatedForm>
+      </div>
+      <div className="flex justify-between">
+        <SocialButton
+          provider={SocialsProvider.GOOGLE}
+          label="Log in with Google"
+        />
+        <SocialButton
+          provider={SocialsProvider.GITHUB}
+          label="Log in with GitHub"
+        />
+        <SocialButton
+          provider={SocialsProvider.DISCORD}
+          label="Log in with Discord"
+        />
       </div>
     </div>
   );
