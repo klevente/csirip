@@ -3,8 +3,6 @@ import { json, redirect } from "@remix-run/node";
 import { Link, useActionData, useSearchParams } from "@remix-run/react";
 import * as React from "react";
 
-import { getUserId, createUserSession } from "~/session.server";
-
 import {
   createUser,
   getUserByEmail,
@@ -19,6 +17,7 @@ import { FormInput } from "~/components/ui/form-input";
 import { SubmitButton } from "~/components/ui/button";
 import { useEffect, useRef } from "react";
 import { useHydrated } from "remix-utils";
+import { authenticator, getUser } from "~/services/auth.server";
 
 const validator = z.object({
   redirectTo: zfd.text().optional(),
@@ -52,13 +51,15 @@ const serverValidator = withZod(
 );
 
 export async function loader({ request }: LoaderArgs) {
-  const userId = await getUserId(request);
-  if (userId) return redirect("/");
+  const user = await getUser(request);
+  if (user) {
+    return redirect("/");
+  }
   return json({});
 }
 
 export async function action({ request }: ActionArgs) {
-  const formData = await request.formData();
+  const formData = await request.clone().formData();
 
   const result = await serverValidator.validate(formData);
 
@@ -71,17 +72,18 @@ export async function action({ request }: ActionArgs) {
 
   const user = await createUser(email, username, password);
 
-  return createUserSession({
-    request,
-    userId: user.id,
-    remember: false,
-    redirectTo: redirectToUrl,
-  });
+  return (await authenticator.authenticate("form", request, {
+    successRedirect: redirectToUrl,
+    context: {
+      type: "registration",
+      user,
+    },
+  })) as never;
 }
 
-export const meta: V2_MetaFunction = () => [{ title: "Join :: Csirip" }];
+export const meta: V2_MetaFunction = () => [{ title: "Register :: Csirip" }];
 
-export default function Join() {
+export default function Register() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/";
   const actionData = useActionData<typeof action>();
@@ -119,7 +121,12 @@ export default function Join() {
             autoComplete="email"
           />
 
-          <FormInput label="Username" name="username" ref={usernameRef} />
+          <FormInput
+            label="Username"
+            name="username"
+            ref={usernameRef}
+            autoComplete="username"
+          />
 
           <FormInput
             label="Password"

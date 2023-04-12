@@ -1,9 +1,6 @@
 import type { ActionArgs, LoaderArgs, V2_MetaFunction } from "@remix-run/node";
-import { json, redirect } from "@remix-run/node";
 import { Link, useActionData, useSearchParams } from "@remix-run/react";
 
-import { createUserSession, getUserId } from "~/session.server";
-import { verifyLogin } from "~/models/user.server";
 import { safeRedirect } from "~/utils";
 import { FormInput } from "~/components/ui/form-input";
 import { SubmitButton } from "~/components/ui/button";
@@ -14,8 +11,10 @@ import { z } from "zod";
 import { useHydrated } from "remix-utils";
 import { zfd } from "zod-form-data";
 import { useEffect, useRef } from "react";
+import { authenticator } from "~/services/auth.server";
+import { NoUserError } from "~/error";
 
-const validator = withZod(
+export const loginValidator = withZod(
   z.object({
     redirectTo: zfd.text().optional(),
     email: zfd.text(z.string().email()),
@@ -25,41 +24,47 @@ const validator = withZod(
 );
 
 export async function loader({ request }: LoaderArgs) {
-  const userId = await getUserId(request);
-  if (userId) return redirect("/");
-  return json({});
+  return authenticator.isAuthenticated(request, {
+    successRedirect: "/",
+  });
 }
 
 export async function action({ request }: ActionArgs) {
-  console.log("a");
-  const formData = await request.formData();
+  const formData = await request.clone().formData();
 
-  const result = await validator.validate(formData);
+  const result = await loginValidator.validate(formData);
   if (result.error) {
     return validationError(result.error);
   }
 
-  const { email, password, redirectTo, remember } = result.data;
+  const { email, password, redirectTo, remember: _remember } = result.data;
 
   const redirectToUrl = safeRedirect(redirectTo, "/");
 
-  const user = await verifyLogin(email, password);
+  // TODO: handle remember - probably have to fix it in `remix-auth`
 
-  if (!user) {
-    return validationError({
-      fieldErrors: {
-        password: "Invalid email or password",
+  try {
+    return (await authenticator.authenticate("form", request, {
+      successRedirect: redirectToUrl,
+      throwOnError: true,
+      context: {
+        type: "login",
+        email,
+        password,
       },
-      formId: result.formId,
-    });
-  }
+    })) as never;
+  } catch (error) {
+    if (error instanceof Error && error.cause instanceof NoUserError) {
+      return validationError({
+        fieldErrors: {
+          password: "Invalid email or password",
+        },
+        formId: result.formId,
+      });
+    }
 
-  return createUserSession({
-    request,
-    userId: user.id,
-    remember,
-    redirectTo: redirectToUrl,
-  });
+    throw error;
+  }
 }
 
 export const meta: V2_MetaFunction = () => [{ title: "Login :: Csirip" }];
@@ -72,9 +77,9 @@ export default function LoginPage() {
   const passwordRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (actionData?.fieldErrors.email) {
+    if (actionData?.fieldErrors?.email) {
       emailRef.current?.focus();
-    } else if (actionData?.fieldErrors?.password) {
+    } else if (actionData?.fieldErrors.password) {
       passwordRef.current?.focus();
     }
   }, [actionData]);
@@ -85,7 +90,7 @@ export default function LoginPage() {
     <div className="flex min-h-full flex-col justify-center">
       <div className="mx-auto w-full max-w-md px-8">
         <ValidatedForm
-          validator={validator}
+          validator={loginValidator}
           noValidate={isHydrated}
           method="post"
           className="flex flex-col space-y-6"
@@ -120,7 +125,7 @@ export default function LoginPage() {
               <Link
                 className="underline"
                 to={{
-                  pathname: "/join",
+                  pathname: "/register",
                   search: searchParams.toString(),
                 }}
               >

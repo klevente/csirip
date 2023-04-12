@@ -13,7 +13,7 @@ import {
 } from "@remix-run/react";
 
 import tailwindStylesheetUrl from "./styles/tailwind.css";
-import { getUser } from "./session.server";
+import { getUser } from "./services/auth.server";
 import React from "react";
 import { Button } from "~/components/ui/button";
 
@@ -29,6 +29,7 @@ export async function loader({ request }: LoaderArgs) {
 
 export default function App() {
   const { user } = useLoaderData<typeof loader>();
+  console.log(user);
   return (
     <html lang="en" className="h-full">
       <head>
@@ -59,7 +60,7 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  <Link to="/join">
+                  <Link to="/register">
                     <Button intent="secondary">Sign up</Button>
                   </Link>
                   <Link to="/login">

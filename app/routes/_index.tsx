@@ -5,7 +5,7 @@ import { useOptionalUser } from "~/utils";
 import { createPost, getLatestPosts } from "~/models/post.server";
 import { defer, json, redirect } from "@remix-run/node";
 import React, { Suspense, useEffect, useRef } from "react";
-import { requireUserId } from "~/session.server";
+import { requireUser } from "~/services/auth.server";
 import { PostView } from "~/components/post-view";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -21,7 +21,8 @@ export async function loader() {
 }
 
 export async function action({ request }: ActionArgs) {
-  const userId = await requireUserId(request);
+  // const userId = await requireUserId(request);
+  const user = await requireUser(request);
 
   const formData = await request.formData();
   const content = formData.get("content");
@@ -30,7 +31,7 @@ export async function action({ request }: ActionArgs) {
     return json({ errors: { post: "Content is required" } }, { status: 400 });
   }
 
-  await createPost({ content, userId });
+  await createPost({ content, userId: user.id });
 
   return redirect("/");
 }
