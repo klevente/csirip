@@ -14,6 +14,7 @@ import {
   GitHubStrategy,
   SocialsProvider,
 } from "remix-auth-socials";
+import { redirect } from "@remix-run/node";
 
 type FormContext =
   | {
@@ -114,7 +115,7 @@ export async function requireUser(request: Request) {
   return user;
 }
 
-/*export async function createUserSession({
+export async function createUserSession({
   request,
   user,
   remember,
@@ -136,4 +137,4 @@ export async function requireUser(request: Request) {
       }),
     },
   });
-}*/
+}
