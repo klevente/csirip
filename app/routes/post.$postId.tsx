@@ -6,7 +6,7 @@ import { useLoaderData } from "@remix-run/react";
 import { PostView } from "~/components/post-view";
 
 export async function loader({ params }: LoaderArgs) {
-  invariant(params.postId, "noteId not found");
+  invariant(params.postId, "postId not found");
 
   const post = await getPost(params.postId);
 
